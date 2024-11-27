@@ -6,6 +6,9 @@ import { useCallback, useState } from "react";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import AuthSocialButton from "./AuthSocialButton";
 import { SiGithub, SiGoogle } from "react-icons/si";
+import axios from "axios";
+import { toast } from "react-hot-toast";
+import { signIn } from "next-auth/react";
 
 type Variant = "LOGIN" | "REGISTER";
 export default function AuthForm() {
@@ -36,18 +39,44 @@ export default function AuthForm() {
     setIsLoading(true);
 
     if (variant === "REGISTER") {
-      //axios register
+      axios
+        .post("/api/register", data)
+        .catch(() => toast.error("Something went wrong"))
+        .finally(() => setIsLoading(false));
     }
 
     if (variant === "LOGIN") {
-      // NextAuth
+      signIn("credentials", {
+        ...data,
+        redirect: false,
+      })
+        .then((callback) => {
+          if (callback?.error) {
+            toast.error("Invalid credentials");
+          }
+
+          if (callback?.ok && !callback?.error) {
+            toast.success("Logged in");
+          }
+        })
+        .finally(() => setIsLoading(false));
     }
   };
 
   const socialAction = (action: string) => {
     setIsLoading(true);
 
-    //NextAuth Social
+    signIn(action, { redirect: false })
+      .then((callback) => {
+        if (callback?.error) {
+          toast.error("Invalid credentials");
+        }
+
+        if (callback?.ok && !callback?.error) {
+          toast.success("Logged in");
+        }
+      })
+      .finally(() => setIsLoading(false));
   };
 
   return (
@@ -100,11 +129,11 @@ export default function AuthForm() {
           <div className="mt-6 flex gap-2">
             <AuthSocialButton
               icon={SiGoogle}
-              onClick={() => socialAction("Github")}
+              onClick={() => socialAction("google")}
             />
             <AuthSocialButton
               icon={SiGithub}
-              onClick={() => socialAction("google")}
+              onClick={() => socialAction("github")}
             />
           </div>
         </div>
